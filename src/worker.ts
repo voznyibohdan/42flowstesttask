@@ -1,15 +1,14 @@
 import { parentPort } from "node:worker_threads";
-import {
-    pipeline,
-    TextGenerationPipeline,
-} from "@huggingface/transformers";
+import {pipeline, TextGenerationPipeline,} from "@huggingface/transformers";
 
-import type { ParentWorkerMessage } from "./types.js";
 import {
     extractChartDataSysPrompt,
     extractChartLabelsSysPrompt,
-    extractChartTypeSysPrompt, extractTitleSysPrompt, generateChartConfigSysPrompt,
+    extractChartTypeSysPrompt,
+    extractTitleSysPrompt,
+    generateChartConfigSysPrompt,
 } from "./prompts.js";
+import type { ParentWorkerMessage } from "./types.js";
 
 // Load model on thread startup
 let generator: TextGenerationPipeline;
@@ -18,7 +17,7 @@ try {
     console.log("From worker: Starting to load model");
     generator = await pipeline(
         "text-generation",
-        "Xenova/Qwen1.5-0.5B-Chat",
+        "onnx-community/Qwen2.5-1.5B-Instruct",
     ) as any;
 
     if (parentPort) {
@@ -33,50 +32,61 @@ if (parentPort) {
     const port = parentPort;
 
     const genOptions = {
-        max_new_tokens: 128 as const,
+        max_new_tokens: 256,
         temperature: 0,
         do_sample: false,
         return_full_text: false,
     }
 
-
     port.on("message", async (payload: ParentWorkerMessage) => {
-        console.log(`Step 0, receive payload: ${payload}`)
+        try {
+            console.log(`Step 0, receive payload: ${payload}`)
 
-        const rawTitle = await generator([
-            { role: "system", content: extractTitleSysPrompt },
-            { role: "user", content: payload.input },
-        ], genOptions);
-        const title = (rawTitle[0] as any).generated_text.at(-1).content as string;
+            const rawTitle = await generator([
+                { role: "system", content: extractTitleSysPrompt },
+                { role: "user", content: payload.input },
+            ], genOptions);
 
-        const rawType = await generator([
-            { role: "system", content: extractChartTypeSysPrompt },
-            { role: "user", content: payload.input },
-        ], genOptions);
-        const chartType = (rawType[0] as any).generated_text.at(-1).content as string;
+            const title = (rawTitle[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 1, title: ${title}`)
 
+            const rawType = await generator([
+                { role: "system", content: extractChartTypeSysPrompt },
+                { role: "user", content: payload.input },
+            ], genOptions);
 
-        const rawLabels = await generator([
-            { role: "system", content: extractChartLabelsSysPrompt },
-            { role: "user", content: payload.input },
-        ], genOptions);
-        const labels = (rawLabels[0] as any).generated_text.at(-1).content as string;
+            const chartType = (rawType[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 2, chartType: ${chartType}`)
 
-        const rawData = await generator([
-            { role: "system", content: extractChartDataSysPrompt },
-            { role: "user", content: payload.input },
-        ], genOptions);
-        const data = (rawData[0] as any).generated_text.at(-1).content as string;
+            const rawLabels = await generator([
+                { role: "system", content: extractChartLabelsSysPrompt },
+                { role: "user", content: payload.input },
+            ], genOptions);
 
-        const chartconfig = await generator([
-            { role: "system", content: generateChartConfigSysPrompt },
-            { role: "user", content: `title: ${title}, type: ${chartType}, labels: ${labels}, data: ${data}` },
-        ], genOptions);
+            const labels = (rawLabels[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 3, labels: ${labels}`)
 
-        const chart = {
-            chartconfig
+            const rawData = await generator([
+                { role: "system", content: extractChartDataSysPrompt },
+                { role: "user", content: payload.input },
+            ], genOptions);
+
+            const data = (rawData[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 4, data: ${data}`)
+
+            const chartconfig = await generator([
+                { role: "system", content: generateChartConfigSysPrompt },
+                { role: "user", content: `title: ${title}, type: ${chartType}, labels: ${labels}, data: ${data}` },
+            ], genOptions);
+
+            const config = (chartconfig[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 5, config: ${config}`)
+
+            const cleanJsonString = config.replace(/^```json\s*|\s*```$/g, '');
+            const echartsObject = JSON.parse(cleanJsonString);
+            port.postMessage({ status: "ok", id: payload.id, result: echartsObject });
+        } catch (error) {
+            port.postMessage({ status: "error", id: payload.id, error: (error as Error).message });
         }
-
-        port.postMessage({ status: "ok", id: payload.id, result: chart });
     });
 }
