@@ -8,24 +8,23 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_URL=postgresql://myuser:mypassword@db:5432/mydb
+    env_file:
+      - .env
     depends_on:
       - db
     restart: unless-stopped
 
   db:
     container_name: postgres-db
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydb
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

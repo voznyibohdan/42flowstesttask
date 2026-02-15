@@ -7,6 +7,9 @@ import { Worker } from "node:worker_threads";
 
 import type { ChildWorkerMessage, PendingRequest } from "./types.js";
 
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from "../generated/prisma/client.js";
+
 // In-memory storage for pending requests
 const pendingLLMRequests = new Map<string, PendingRequest>();
 
@@ -52,6 +55,10 @@ LLMWorker.on("message", (msg: ChildWorkerMessage) => {
     }
 })
 
+// Prisma client
+const pool = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter: pool })
+
 // Server setup
 const app = express();
 app.use(express.json());
@@ -75,13 +82,32 @@ app.post("/api/analyze", requireLLMReadyMiddleware, async (req, res) => {
     LLMWorker.postMessage({ id: requestId, input: message });
 
     try {
-        const result = await promise;
+        const result = await promise as { chart: unknown, title: string, type: string };
+        await prisma.request.create({
+            data: {
+                input_text: message,
+                title: result.title,
+                status: "success",
+                type: result.type,
+                config: result as object,
+            },
+        });
         res.json({ success: true, echartsConfig: result });
     } catch (err) {
+        const errorMessage = (err as Error).message;
+        await prisma.request.create({
+            data: {
+                input_text: message,
+                title: null,
+                status: "error",
+                type: null,
+                config: { error: "Failed to generate response", details: errorMessage },
+            },
+        });
         res.status(500).json({
             success: false,
             error: "Failed to generate response",
-            details: (err as Error).message
+            details: errorMessage
         });
     }
 })

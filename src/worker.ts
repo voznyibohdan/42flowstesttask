@@ -47,7 +47,8 @@ if (parentPort) {
             ], genOptions);
 
             const titleWithType = (rawTitleWithType[0] as any).generated_text.at(-1).content as string;
-            console.log(`Step 1, title: ${titleWithType}`)
+            const [title, type] = titleWithType.split(", ");
+            console.log(`Step 1, title: ${title}, type: ${type}`);
 
             const rawLabels = await generator([
                 { role: "system", content: extractChartLabelsSysPrompt },
@@ -67,7 +68,7 @@ if (parentPort) {
 
             const chartconfig = await generator([
                 { role: "system", content: generateChartConfigSysPrompt },
-                { role: "user", content: `${rawTitleWithType}, labels: ${labels}, data: ${data}` },
+                { role: "user", content: `title: ${title}, type: ${type}, labels: ${labels}, data: ${data}` },
             ], genOptions);
 
             const config = (chartconfig[0] as any).generated_text.at(-1).content as string;
@@ -75,7 +76,7 @@ if (parentPort) {
 
             const cleanJsonString = config.replace(/^```json\s*|\s*```$/g, '');
             const echartsObject = JSON.parse(cleanJsonString);
-            port.postMessage({ status: "ok", id: payload.id, result: echartsObject });
+            port.postMessage({ status: "ok", id: payload.id, result: { chart: echartsObject, title, type }});
         } catch (error) {
             port.postMessage({ status: "error", id: payload.id, error: (error as Error).message });
         }
