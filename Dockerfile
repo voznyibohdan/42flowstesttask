@@ -1,45 +1,39 @@
-# ----------------------------
-# Stage 1: Builder
-# ----------------------------
-# Changed from alpine to slim to support ONNX/glibc
 FROM node:24-slim AS builder
 
 WORKDIR /app
 
-# Copy config files
-COPY package*.json tsconfig.json ./
+RUN apt-get update -y && \
+    apt-get install -y openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install ALL dependencies
-RUN npm ci
+COPY package*.json ./
 
-# Copy source code
+RUN npm ci --ignore-scripts
+
 COPY . .
 
-# Build the TypeScript code
-RUN npm run build
+RUN npx prisma generate && npm run build
 
-# ----------------------------
-# Stage 2: Production
-# ----------------------------
-# Changed from alpine to slim here as well
 FROM node:24-slim AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-# Environment variable for Hugging Face cache
+RUN apt-get update -y && \
+    apt-get install -y openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy package files
 COPY package*.json ./
 
-# Install ONLY production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts
 
-# Copy compiled code from builder
 COPY --from=builder /app/dist ./dist
 
-# Expose the port
+COPY --from=builder /app/prisma ./prisma
+
+COPY --from=builder /app/prisma.config.ts ./
+
+RUN npx prisma generate
+
 EXPOSE 3000
 
-# Start command
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
