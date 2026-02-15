@@ -31,7 +31,7 @@ if (parentPort) {
     const port = parentPort;
 
     const genOptions = {
-        max_new_tokens: 256,
+        max_new_tokens: 400,
         temperature: 0,
         do_sample: false,
         return_full_text: false,
