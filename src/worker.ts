@@ -4,8 +4,7 @@ import {pipeline, TextGenerationPipeline,} from "@huggingface/transformers";
 import {
     extractChartDataSysPrompt,
     extractChartLabelsSysPrompt,
-    extractChartTypeSysPrompt,
-    extractTitleSysPrompt,
+    extractTitleWithTypeSysPrompt,
     generateChartConfigSysPrompt,
 } from "./prompts.js";
 import type { ParentWorkerMessage } from "./types.js";
@@ -42,21 +41,13 @@ if (parentPort) {
         try {
             console.log(`Step 0, receive payload: ${payload}`)
 
-            const rawTitle = await generator([
-                { role: "system", content: extractTitleSysPrompt },
+            const rawTitleWithType = await generator([
+                { role: "system", content: extractTitleWithTypeSysPrompt },
                 { role: "user", content: payload.input },
             ], genOptions);
 
-            const title = (rawTitle[0] as any).generated_text.at(-1).content as string;
-            console.log(`Step 1, title: ${title}`)
-
-            const rawType = await generator([
-                { role: "system", content: extractChartTypeSysPrompt },
-                { role: "user", content: payload.input },
-            ], genOptions);
-
-            const chartType = (rawType[0] as any).generated_text.at(-1).content as string;
-            console.log(`Step 2, chartType: ${chartType}`)
+            const titleWithType = (rawTitleWithType[0] as any).generated_text.at(-1).content as string;
+            console.log(`Step 1, title: ${titleWithType}`)
 
             const rawLabels = await generator([
                 { role: "system", content: extractChartLabelsSysPrompt },
@@ -76,7 +67,7 @@ if (parentPort) {
 
             const chartconfig = await generator([
                 { role: "system", content: generateChartConfigSysPrompt },
-                { role: "user", content: `title: ${title}, type: ${chartType}, labels: ${labels}, data: ${data}` },
+                { role: "user", content: `${rawTitleWithType}, labels: ${labels}, data: ${data}` },
             ], genOptions);
 
             const config = (chartconfig[0] as any).generated_text.at(-1).content as string;

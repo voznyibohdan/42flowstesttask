@@ -1,45 +1,26 @@
-export const extractTitleSysPrompt = `
-Task: Based on user input generate a short title describing nature of the data. 
+export const extractTitleWithTypeSysPrompt = `
+Task: Based on user input generate a short title describing the nature of the data and classify the data into one of the following chart types: [line, bar, bar-grouped, pie, funnel].
+
+Output format: title: actual_title, type: actual_type
 
 Example input: A line chart tracking car sales trends over the course of a week: Mon: 150, Tue: 230, Wed: 224, Thu: 218, Fri: 135, Sat: 147, Sun: 260.
-Example output: Sales trends 
+Example output: title: Sales trends, type: line
 
 Example input: A bar chart displaying daily car dealership sales volume: Mon: 120, Tue: 200, Wed: 150, Thu: 80, Fri: 70, Sat: 110, Sun: 130.
-Example output: Dealership sales volume
+Example output: title: Dealership sales volume, type: bar
 
 Example input: A grouped bar chart comparing performance across the years 2015, 2016, and 2017 for four products: Matcha Latte (43.3, 85.8, 93.7), Milk Tea (83.1, 73.4, 55.1), Cheese Cocoa (86.4, 65.2, 82.5), and Walnut Brownie (72.4, 53.9, 39.1).
-Example output: Performance across the years
+Example output: title: Performance across the years, type: bar-grouped
 
 Example input: A pie chart titled 'Referer of a Website' displaying traffic sources: Search Engine (1048), Direct (735), Email (580), Union Ads (484), and Video Ads (300).
-Example output: Referer of a Website
+Example output: title: Referer of a Website, type: pie
 
 Example input: A funnel chart titled 'Funnel' illustrating the car purchase conversion pipeline with a gap of 2 between stages: Show (100), Click (80), Visit (60), Inquiry (40), and Order (20).
-Example output: Funnel
+Example output: title: Funnel, type: funnel
 
 CRITICAL RULES:
-Do not include any additional info in the output.
-`;
-
-export const extractChartTypeSysPrompt = `
-Task: From the context of user message classify data into one of the following types: [line, bar, bar-grouped, pie, funnel].
-
-Example input: A line chart tracking car sales trends over the course of a week: Mon: 150, Tue: 230, Wed: 224, Thu: 218, Fri: 135, Sat: 147, Sun: 260.
-Example output: line
-
-Example input: A bar chart displaying daily car dealership sales volume: Mon: 120, Tue: 200, Wed: 150, Thu: 80, Fri: 70, Sat: 110, Sun: 130.
-Example output: bar
-
-Example input: A grouped bar chart comparing performance across the years 2015, 2016, and 2017 for four products: Matcha Latte (43.3, 85.8, 93.7), Milk Tea (83.1, 73.4, 55.1), Cheese Cocoa (86.4, 65.2, 82.5), and Walnut Brownie (72.4, 53.9, 39.1).
-Example output: bar-grouped
-
-Example input: A pie chart titled "Referer of a Website" displaying traffic sources: Search Engine (1048), Direct (735), Email (580), Union Ads (484), and Video Ads (300).
-Example output: pie
-
-Example input: A funnel chart titled "Funnel" illustrating the car purchase conversion pipeline with a gap of 2 between stages: Show (100), Click (80), Visit (60), Inquiry (40), and Order (20).
-Example output: funnel
-
-CRITICAL RULES:
-Respond only with one of [line, bar, bar-grouped, pie, funnel]!
+Respond only in the format: title: actual_title, type: actual_type
+Type must be one of [line, bar, bar-grouped, pie, funnel]. Do not include any additional info.
 `;
 
 export const extractChartLabelsSysPrompt = `
