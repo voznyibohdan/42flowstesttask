@@ -5,10 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 
-import type { ChildWorkerMessage, PendingRequest } from "./types.js";
 
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from "../generated/prisma/client.js";
+
+import type { ChildWorkerMessage, PendingRequest } from "./types.js";
 
 // In-memory storage for pending requests
 const pendingLLMRequests = new Map<string, PendingRequest>();
@@ -53,11 +54,11 @@ LLMWorker.on("message", (msg: ChildWorkerMessage) => {
         default:
             console.error("Unknown message status from LLM worker");
     }
-})
+});
 
 // Prisma client
-const pool = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter: pool })
+const pool = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter: pool });
 
 // Server setup
 const app = express();
@@ -83,6 +84,7 @@ app.post("/api/analyze", requireLLMReadyMiddleware, async (req, res) => {
 
     try {
         const result = await promise as { chart: unknown, title: string, type: string };
+
         await prisma.request.create({
             data: {
                 input_text: message,
@@ -92,9 +94,11 @@ app.post("/api/analyze", requireLLMReadyMiddleware, async (req, res) => {
                 config: result as object,
             },
         });
-        res.json({ success: true, echartsConfig: result });
+
+        res.json({ success: true, echartsConfig: result.chart });
     } catch (err) {
         const errorMessage = (err as Error).message;
+
         await prisma.request.create({
             data: {
                 input_text: message,
@@ -104,13 +108,14 @@ app.post("/api/analyze", requireLLMReadyMiddleware, async (req, res) => {
                 config: { error: "Failed to generate response", details: errorMessage },
             },
         });
+
         res.status(500).json({
             success: false,
             error: "Failed to generate response",
             details: errorMessage
         });
     }
-})
+});
 
 app.listen(3000, () => {
     console.log("Server listening on port 3000");

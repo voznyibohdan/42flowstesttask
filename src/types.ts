@@ -12,10 +12,10 @@ export type ChildWorkerMessage = {
 } | {
     status: "ok";
     id: string;
-    result: unknown;
+    result: { chart: unknown; title: string; type: string };
 }
 
 export type PendingRequest = {
-    resolve: (result: unknown ) => void;
+    resolve: (result: { chart: unknown; title: string; type: string } ) => void;
     reject: (reason: Error) => void;
 }

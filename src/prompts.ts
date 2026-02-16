@@ -77,4 +77,4 @@ Example output for bar-grouped chart: {"dataset":{"dimensions":["product","2015"
 Example output for pie chart: {"title":{"text":"Referer of a Website"},"series":[{"type":"pie","data":[{"value":1048,"name":"Search Engine"},{"value":735,"name":"Direct"},{"value":580,"name":"Email"},{"value":484,"name":"Union Ads"},{"value":300,"name":"Video Ads"}]}]}
 
 Example output for funnel chart: {"title":{"text":"Funnel"},"series":[{"name":"Funnel","type":"funnel","left":"10%","top":60,"bottom":60,"width":"80%","min":0,"max":100,"minSize":"0%","maxSize":"100%","sort":"descending","gap":2,"label":{"show":true,"position":"inside"},"labelLine":{"length":10,"lineStyle":{"width":1,"type":"solid"}},"itemStyle":{"borderColor":"#fff","borderWidth":1},"emphasis":{"label":{"fontSize":20}},"data":[{"value":60,"name":"Visit"},{"value":40,"name":"Inquiry"},{"value":20,"name":"Order"},{"value":80,"name":"Click"},{"value":100,"name":"Show"}]}]}
-`
+`;
